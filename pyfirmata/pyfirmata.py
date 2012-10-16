@@ -223,7 +223,6 @@ class Board(object):
         msg.append(END_SYSEX)
         self.sp.write(msg)
 
-        
     def bytes_available(self):
         return self.sp.inWaiting()
 
@@ -307,10 +306,13 @@ class Board(object):
             pin_nr = int(bits[1])
             part[pin_nr].mode = UNAVAILABLE
         
-    def i2c_request(self, address, register, data):
-        msg = to_two_bytes(address)
-        msg += to+two_bytes(register)
-        msg += data
+    def i2c_request(self, address, register, data=None):
+        msg = bytearray()
+        msg.extend(chr(address))
+        msg.extend(chr(0b00001000)) # 7 bit read once
+        msg.extend(to_two_bytes(register))
+        if data:
+            msg.extend(data)
         self.send_sysex(I2C_REQUEST, msg)
     
     def i2c_reply(self, address):
