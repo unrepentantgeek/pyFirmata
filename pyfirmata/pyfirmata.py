@@ -299,7 +299,7 @@ class Board(object):
         """
         Configure I2C
         """
-        # TODO: actually configure i2c delay
+        self.send_sysex(I2C_CONFIG, to_two_bytes(delay))
         for i2c_pin in self._i2c_pins:
             bits = i2c_pin.split(':')
             a_d = bits[0] == 'a' and 'analog' or 'digital'
