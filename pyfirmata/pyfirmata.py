@@ -4,6 +4,7 @@ import inspect
 import time
 
 import serial
+from collections import deque
 
 from .util import two_byte_iter_to_str, to_two_bytes
 
@@ -73,6 +74,8 @@ class Board(object):
     _command = None
     _stored_data = []
     _parsing_sysex = False
+    _i2c_pins = None
+    _i2c_messages = {}
     
     def __init__(self, port, layout, baudrate=57600, name=None):
         self.sp = serial.Serial(port, baudrate)
@@ -134,6 +137,10 @@ class Board(object):
         # Disable certain ports like Rx/Tx and crystal ports
         for i in board_layout['disabled']:
             self.digital[i].mode = UNAVAILABLE
+        
+        # Save i2c pin config for later use
+        if 'i2c' in board_layout:
+            self._i2c_pins = board_layout['i2c']
 
         # Create a dictionary of 'taken' pins. Used by the get_pin method
         self.taken = { 'analog' : dict(map(lambda p: (p.pin_number, False), self.analog)),
@@ -144,6 +151,7 @@ class Board(object):
         self.add_cmd_handler(DIGITAL_MESSAGE, self._handle_digital_message)
         self.add_cmd_handler(REPORT_VERSION, self._handle_report_version)
         self.add_cmd_handler(REPORT_FIRMWARE, self._handle_report_firmware)
+        self.add_cmd_handler(I2C_REPLY, self._handle_i2c_reply)
     
     def add_cmd_handler(self, cmd, func):
         """ 
@@ -208,7 +216,7 @@ class Board(object):
         Sends a SysEx msg.
         
         :arg sysex_cmd: A sysex command byte
-        : arg data: a bytearray of 7-bit bytes of arbitrary data
+        :arg data: a bytearray of 7-bit bytes of arbitrary data
         """
         msg = bytearray([START_SYSEX, sysex_cmd])
         msg.extend(data)
@@ -286,6 +294,29 @@ class Board(object):
         # don't set pin.mode as that calls this method
         self.digital[pin]._mode = SERVO
         self.digital[pin].write(angle)
+    
+    def i2c_config(self, delay):
+        """
+        Configure I2C
+        """
+        # TODO: actually configure i2c delay
+        for i2c_pin in self._i2c_pins:
+            bits = i2c_pin.split(':')
+            a_d = bits[0] == 'a' and 'analog' or 'digital'
+            part = getattr(self, a_d)
+            pin_nr = int(bits[1])
+            part[pin_nr].mode = UNAVAILABLE
+        
+    def i2c_request(self, address, register, data):
+        msg = to_two_bytes(address)
+        msg += to+two_bytes(register)
+        msg += data
+        self.send_sysex(I2C_REQUEST, msg)
+    
+    def i2c_reply(self, address):
+        if not address in self._i2c_messages and not self._i2c_messages[address]:
+            return
+        return self._i2c_messages[address].popleft()
         
     def exit(self):
         """ Call this to exit cleanly. """
@@ -326,6 +357,15 @@ class Board(object):
         minor = data[1]
         self.firmware_version = (major, minor)
         self.firmware = two_byte_iter_to_str(data[2:])
+    
+    def _handle_i2c_reply(self, *data):
+        address = from_two_bytes(data[0], data[1])
+        register = from_two_bytes(data[2], data[3])
+        reply = (register, data[4:])
+        if address in self._i2c_messages:
+            self._i2c_messages[address].append(reply)
+        else:
+            self._i2c_messages[address] = deque(reply)
 
 class Port(object):
     """ An 8-bit port on the board """
