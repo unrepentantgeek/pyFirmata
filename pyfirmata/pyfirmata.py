@@ -39,7 +39,7 @@ SYSEX_REALTIME = 0x7F       # MIDI Reserved for realtime messages
 
 # I2C command constants
 I2C_READ = 0b00001000
-I@C_WRITE = 0b00000000
+I2C_WRITE = 0b00000000
 
 # Pin modes.
 # except from UNAVAILABLE taken from Firmata.h
@@ -333,7 +333,7 @@ class Board(object):
         write value to register
         """
         msg = bytearray([address, I2C_WRITE])
-        msg.extend(to_two_bytes(register)
+        msg.extend(to_two_bytes(register))
         for byte in data:
             msg.extend(to_two_bytes(byte))
         self.send_sysex(I2C_REQUEST, msg)
