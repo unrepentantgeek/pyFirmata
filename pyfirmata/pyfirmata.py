@@ -78,6 +78,7 @@ class Board(object):
     _parsing_sysex = False
     _i2c_pins = None
     _i2c_enabled = False
+    _i2c_reply = None
     
     def __init__(self, port, layout, baudrate=57600, name=None):
         self.sp = serial.Serial(port, baudrate)
@@ -366,11 +367,11 @@ class Board(object):
         self.firmware = two_byte_iter_to_str(data[2:])
     
     def _handle_i2c_reply(self, *data):
-        self._i2c_reply = data[4:]
         # address = from_two_bytes(data[0], data[1])  # lsb, msb
         # register = from_two_bytes(data[2], data[3])  # lsb, msb
         # data = data[4:]
         # self._i2c_reply = (address, register, data)
+        self._i2c_reply = two_byte_iter_to_str(data[4:])
 
 class Port(object):
     """ An 8-bit port on the board """
