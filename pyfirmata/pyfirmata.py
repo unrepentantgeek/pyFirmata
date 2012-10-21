@@ -6,7 +6,7 @@ import time
 import serial
 from collections import deque
 
-from .util import two_byte_iter_to_str, to_two_bytes
+from .util import two_byte_iter_to_str, two_byte_iter_to_bytearray, to_two_bytes
 
 # Message command bytes (0x80(128) to 0xFF(255)) - straight from Firmata.h
 DIGITAL_MESSAGE = 0x90      # send data for a digital pin
@@ -370,8 +370,7 @@ class Board(object):
         # address = from_two_bytes(data[0], data[1])  # lsb, msb
         # register = from_two_bytes(data[2], data[3])  # lsb, msb
         # data = data[4:]
-        # self._i2c_reply = (address, register, data)
-        self._i2c_reply = two_byte_iter_to_str(data[4:])
+        self._i2c_reply = two_byte_iter_to_bytearray(data[4:])
 
 class Port(object):
     """ An 8-bit port on the board """
