@@ -322,7 +322,7 @@ class Board(object):
         self.send_sysex(I2C_REQUEST, msg)
         # spin on waiting for reply to be set in object
         timeout = time.time() + timeout
-        while not self._i2c_reply & time.time() < timeout:
+        while (not self._i2c_reply) and (time.time() < timeout):
             time.sleep(0)
         return self._i2c_reply
         

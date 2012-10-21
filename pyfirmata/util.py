@@ -109,7 +109,7 @@ def two_byte_iter_to_bytearray(bytes):
         except IndexError:
             msb = 0x00
         chars.append(from_two_bytes([lsb, msb]))
-    return chars.decode()
+    return chars
     
 def str_to_two_byte_iter(string):
     """
