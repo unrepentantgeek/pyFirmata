@@ -94,7 +94,7 @@ def two_byte_iter_to_str(bytes):
     """
     Return a string made from a list of two byte chars.
     """
-    return two_byte_iter_to_bytearray().decode()
+    return two_byte_iter_to_bytearray(bytes).decode()
 
 def two_byte_iter_to_bytearray(bytes):
     """
