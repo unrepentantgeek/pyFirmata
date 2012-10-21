@@ -37,6 +37,8 @@ SAMPLING_INTERVAL = 0x7A    # set the poll rate of the main loop
 SYSEX_NON_REALTIME = 0x7E   # MIDI Reserved for non-realtime messages
 SYSEX_REALTIME = 0x7F       # MIDI Reserved for realtime messages
 
+# I2C command constants
+I2C_READ = 0b00001000
 
 # Pin modes.
 # except from UNAVAILABLE taken from Firmata.h
@@ -75,7 +77,7 @@ class Board(object):
     _stored_data = []
     _parsing_sysex = False
     _i2c_pins = None
-    _i2c_messages = {}
+    _i2c_enabled = False
     
     def __init__(self, port, layout, baudrate=57600, name=None):
         self.sp = serial.Serial(port, baudrate)
@@ -138,7 +140,7 @@ class Board(object):
         for i in board_layout['disabled']:
             self.digital[i].mode = UNAVAILABLE
         
-        # Save i2c pin config for later use
+        # Save i2c pin config for possible later use
         if 'i2c' in board_layout:
             self._i2c_pins = board_layout['i2c']
 
@@ -305,20 +307,23 @@ class Board(object):
             part = getattr(self, a_d)
             pin_nr = int(bits[1])
             part[pin_nr].mode = UNAVAILABLE
+        self._i2c_enabled = True
         
-    def i2c_request(self, address, register, data=None):
-        msg = bytearray()
-        msg.extend(chr(address))
-        msg.extend(chr(0b00001000)) # 7 bit read once
+    def i2c_read(self, address, register, count, timeout=1):
+        """
+        timeout: seconds
+        """
+        if not self._i2c_enabled:
+            return None
+        msg = bytearray([address, I2C_READ])
         msg.extend(to_two_bytes(register))
-        if data:
-            msg.extend(data)
+        msg.extend(to_two_bytes(count))
         self.send_sysex(I2C_REQUEST, msg)
-    
-    def i2c_reply(self, address):
-        if not address in self._i2c_messages and not self._i2c_messages[address]:
-            return
-        return self._i2c_messages[address].popleft()
+        # spin on waiting for reply to be set in object
+        timeout = time.time() + timeout
+        while not self._i2c_reply & time.time() < timeout:
+            time.sleep(0)
+        return self._i2c_reply
         
     def exit(self):
         """ Call this to exit cleanly. """
@@ -361,13 +366,11 @@ class Board(object):
         self.firmware = two_byte_iter_to_str(data[2:])
     
     def _handle_i2c_reply(self, *data):
-        address = from_two_bytes(data[0], data[1])
-        register = from_two_bytes(data[2], data[3])
-        reply = (register, data[4:])
-        if address in self._i2c_messages:
-            self._i2c_messages[address].append(reply)
-        else:
-            self._i2c_messages[address] = deque(reply)
+        self._i2c_reply = data[4:]
+        # address = from_two_bytes(data[0], data[1])  # lsb, msb
+        # register = from_two_bytes(data[2], data[3])  # lsb, msb
+        # data = data[4:]
+        # self._i2c_reply = (address, register, data)
 
 class Port(object):
     """ An 8-bit port on the board """

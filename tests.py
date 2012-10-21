@@ -43,7 +43,7 @@ class TestBoardMessages(BoardBaseTest):
     def test_handle_analog_message(self):
         self.board.analog[3].reporting = True
         self.assertEqual(self.board.analog[3].read(), None)
-        # This sould set it correctly. 1023 (127, 7 in to 7 bit bytes) is the
+        # This sould set it correctly. 1023 (127, 7 in two 7 bit bytes) is the
         # max value an analog pin will send and it should result in a value 1
         self.board._handle_analog_message(3, 127, 7)
         self.assertEqual(self.board.analog[3].read(), 1.0)
