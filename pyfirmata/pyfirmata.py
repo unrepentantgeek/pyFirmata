@@ -316,6 +316,7 @@ class Board(object):
         """
         if not self._i2c_enabled:
             return None
+        self._i2c_reply = None
         msg = bytearray([address, I2C_READ])
         msg.extend(to_two_bytes(register))
         msg.extend(to_two_bytes(count))
