@@ -70,16 +70,6 @@ class Board(object):
     """
     Base class for any board
     """
-    firmata_version = None
-    firmware = None
-    firmware_version = None
-    _command_handlers = {}
-    _command = None
-    _stored_data = []
-    _parsing_sysex = False
-    _i2c_pins = None
-    _i2c_enabled = False
-    _i2c_reply = None
     
     def __init__(self, port, layout, baudrate=57600, name=None):
         self.sp = serial.Serial(port, baudrate)
@@ -91,6 +81,18 @@ class Board(object):
         self.name = name
         if not self.name:
             self.name = port
+        
+        self.firmata_version = None
+        self.firmware = None
+        self.firmware_version = None
+        self._command = None
+        self._stored_data = []
+        self._parsing_sysex = False
+        self._command_handlers = {}
+        self._i2c_pins = None
+        self._i2c_enabled = False
+        self._i2c_reply = None
+        
         self.setup_layout(layout)
         # Iterate over the first messages to get firmware data
         while self.bytes_available():
