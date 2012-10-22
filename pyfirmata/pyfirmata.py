@@ -99,6 +99,16 @@ class Board(object):
             self.iterate()
         # TODO Test whether we got a firmware name and version, otherwise there 
         # probably isn't any Firmata installed
+        firmata_version = None
+        firmware = None
+        firmware_version = None
+        _command = None
+        _stored_data = []
+        _parsing_sysex = False
+        _command_handlers = {}
+        _i2c_pins = None
+        _i2c_enabled = False
+        _i2c_reply = None
         
     def __str__(self):
         return "Board{0.name} on {0.sp.port}".format(self)
