@@ -1,9 +1,9 @@
 from __future__ import division
 from __future__ import unicode_literals
 import inspect
-import time
-
 import serial
+import time
+import threading
 from collections import deque
 
 from .util import two_byte_iter_to_str, two_byte_iter_to_bytearray, to_two_bytes
@@ -108,7 +108,6 @@ class Board(object):
         _command_handlers = {}
         _i2c_pins = None
         _i2c_enabled = False
-        _i2c_reply = None
         
     def __str__(self):
         return "Board{0.name} on {0.sp.port}".format(self)
@@ -322,7 +321,9 @@ class Board(object):
             pin_nr = int(bits[1])
             part[pin_nr].mode = UNAVAILABLE
         self._i2c_enabled = True
-        
+        self._i2c_reply = None
+        self._i2c_reply_ready = threading.Event()
+    
     def i2c_read(self, address, register, count, timeout=1):
         """
         timeout: seconds
@@ -333,12 +334,12 @@ class Board(object):
         msg = bytearray([address, I2C_READ])
         msg.extend(to_two_bytes(register))
         msg.extend(to_two_bytes(count))
+        self._i2c_reply_ready.clear()
         self.send_sysex(I2C_REQUEST, msg)
-        # spin on waiting for reply to be set in object
-        timeout = time.time() + timeout
-        while (not self._i2c_reply) and (time.time() < timeout):
-            time.sleep(0)
-        return self._i2c_reply
+        if self._i2c_reply_ready.wait(timeout):
+          return self._i2c_reply
+        else:
+          return None
         
     def i2c_write(self, address, register, data):
         """
@@ -395,6 +396,7 @@ class Board(object):
         # register = from_two_bytes(data[2], data[3])  # lsb, msb
         # data = data[4:]
         self._i2c_reply = two_byte_iter_to_bytearray(data[4:])
+        self._i2c_reply_ready.set()
 
 class Port(object):
     """ An 8-bit port on the board """
