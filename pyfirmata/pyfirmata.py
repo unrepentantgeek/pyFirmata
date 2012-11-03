@@ -330,23 +330,25 @@ class Board(object):
         """
         if not self._i2c_enabled:
             return None
-        self._i2c_reply = None
         msg = bytearray([address, I2C_READ])
-        msg.extend(to_two_bytes(register))
+        if register != None:
+            msg.extend(to_two_bytes(register))
         msg.extend(to_two_bytes(count))
+        self._i2c_reply = None
         self._i2c_reply_ready.clear()
         self.send_sysex(I2C_REQUEST, msg)
         if self._i2c_reply_ready.wait(timeout):
-          return self._i2c_reply
+            return self._i2c_reply
         else:
-          return None
+            return None
         
     def i2c_write(self, address, register, data):
         """
         write value to register
         """
         msg = bytearray([address, I2C_WRITE])
-        msg.extend(to_two_bytes(register))
+        if register != None:
+            msg.extend(to_two_bytes(register))
         for byte in data:
             msg.extend(to_two_bytes(byte))
         self.send_sysex(I2C_REQUEST, msg)
