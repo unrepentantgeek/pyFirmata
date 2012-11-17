@@ -131,8 +131,6 @@ class MockupPin(pyfirmata.Pin):
     def write(self, value):
         if self.mode == pyfirmata.UNAVAILABLE:
             raise IOError("Cannot read from pin {0}".format(self.pin_number))
-        if self.mode == pyfirmata.INPUT:
-            raise IOError("{0} pin {1} is not an output".format(self.port and "Digital" or "Analog", self.get_pin_number()))
         if not self.port:
             raise AttributeError("AnalogPin instance has no attribute 'write'")
         # if value != self.read():

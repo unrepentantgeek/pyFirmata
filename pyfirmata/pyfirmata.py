@@ -77,7 +77,7 @@ class Board(object):
         # Alas, Firmata blinks it's version before printing it to serial
         # For 2.3, even 5 seconds might not be enough.
         # TODO Find a more reliable way to wait until the board is ready
-        self.pass_time(BOARD_SETUP_WAIT_TIME)
+        time.sleep(BOARD_SETUP_WAIT_TIME)
         self.name = name
         if not self.name:
             self.name = port
@@ -217,15 +217,7 @@ class Board(object):
         else:
             pin.enable_reporting()
         return pin
-        
-    def pass_time(self, t):
-        """ 
-        Non-blocking time-out for ``t`` seconds.
-        """
-        cont = time.time() + t
-        while time.time() < cont:
-            time.sleep(0)
-            
+
     def send_sysex(self, sysex_cmd, data):
         """
         Sends a SysEx msg.
