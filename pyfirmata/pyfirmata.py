@@ -543,11 +543,9 @@ class Pin(object):
         """
         if self.mode is UNAVAILABLE:
             raise IOError("{0} can not be used through Firmata".format(self))
-        if self.mode is INPUT:
-            raise IOError("{0} is set up as an INPUT and can therefore not be written to".format(self))
         if value is not self.value:
             self.value = value
-            if self.mode is OUTPUT:
+            if self.mode is OUTPUT or self.mode is INPUT:
                 if self.port:
                     self.port.write()
                 else:
